@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机颜色矩阵生成器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 2px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+        }
+        #matrix-container {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(10, 50px);
+        }
+        .color-options {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .color-option {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>随机颜色矩阵生成器</h1>
+    
+    <!-- 显示颜色选择框 -->
+    <div class="color-options">
+        <div class="color-option" style="background-color: red;"></div>
+        <div class="color-option" style="background-color: green;"></div>
+        <div class="color-option" style="background-color: blue;"></div>
+        <div class="color-option" style="background-color: yellow;"></div>
+        <div class="color-option" style="background-color: orange;"></div>
+    </div>
+
+    <div>
+        <label for="x">X值 (百分比): </label>
+        <input type="number" id="x" value="10"> <br>
+
+        <label for="y">Y值 (百分比): </label>
+        <input type="number" id="y" value="10"> <br>
+
+        <label for="z">Z值 (百分比): </label>
+        <input type="number" id="z" value="10"> <br>
+
+        <button id="generateBtn">生成矩阵</button>
+    </div>
+
+    <div id="matrix-container" class="matrix"></div>
+
+    <script>
+        const colors = ["red", "green", "blue", "yellow", "orange"];
+        let matrix = [];
+
+        // 生成随机颜色矩阵
+        function generateMatrix() {
+            // 获取 X, Y, Z 的值
+            const x = parseFloat(document.getElementById("x").value) / 100;
+            const y = parseFloat(document.getElementById("y").value) / 100;
+            const z = parseFloat(document.getElementById("z").value) / 100;
+
+            // 初始化矩阵
+            matrix = [];
+            for (let i = 0; i < 10; i++) {
+                matrix[i] = [];
+                for (let j = 0; j < 10; j++) {
+                    matrix[i][j] = null; // 初始化为空
+                }
+            }
+
+            // 随机选择 (0,0) 颜色
+            matrix[0][0] = colors[Math.floor(Math.random() * 5)];
+
+            // 根据规则生成每个点的颜色
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 10; j++) {
+                    if (matrix[i][j] === null) { // 如果没有颜色，生成颜色
+                        matrix[i][j] = generateColor(i, j, x, y, z);
+                    }
+                }
+            }
+
+            // 更新界面
+            displayMatrix();
+        }
+
+        // 根据前一个点的颜色概率生成当前点颜色
+        function generateColor(i, j, x, y, z) {
+            const baseProbability = 0.2; // 基础概率设为 0.2，即 20%
+
+            const leftColor = (j > 0) ? matrix[i][j - 1] : null;
+            const topColor = (i > 0) ? matrix[i - 1][j] : null;
+
+            const probabilities = {
+                red: baseProbability,
+                green: baseProbability,
+                blue: baseProbability,
+                yellow: baseProbability,
+                orange: baseProbability,
+            };
+
+            // 根据左边点的颜色调整概率
+            if (leftColor) {
+                probabilities[leftColor] += x;
+            }
+
+            // 根据上面点的颜色调整概率
+            if (topColor) {
+                probabilities[topColor] += y;
+            }
+
+            // 如果左边和上面点颜色相同，增加Z的概率
+            if (leftColor && topColor && leftColor === topColor) {
+                probabilities[leftColor] += z;
+            }
+
+            // 计算剩余的概率
+            const remainingProbability = 1 - Object.values(probabilities).reduce((a, b) => a + b, 0);
+            const remainingColors = colors.filter(c => !probabilities[c]);
+            const remainingProbabilityPerColor = remainingProbability / remainingColors.length;
+
+            // 将剩余的概率平分给没有被占用的颜色
+            remainingColors.forEach(c => {
+                probabilities[c] += remainingProbabilityPerColor;
+            });
+
+            // 根据概率选择颜色
+            const randomValue = Math.random();
+            let cumulativeProbability = 0;
+
+            for (let color of colors) {
+                cumulativeProbability += probabilities[color];
+                if (randomValue <= cumulativeProbability) {
+                    return color;
+                }
+            }
+
+            return colors[0]; // 默认颜色
+        }
+
+        // 显示矩阵
+        function displayMatrix() {
+            const container = document.getElementById("matrix-container");
+            container.innerHTML = ''; // 清空原有矩阵
+
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.style.backgroundColor = matrix[i][j]; // 设置背景颜色
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        // 绑定点击事件
+        document.getElementById("generateBtn").addEventListener("click", generateMatrix);
+    </script>
+</body>
+</html>
